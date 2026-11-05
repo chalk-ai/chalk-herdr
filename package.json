@@ -2,11 +2,14 @@
   "name": "chalk-herdr",
   "version": "0.1.0",
   "private": true,
+  "description": "Run Claude Code in Chalk sandboxes from Herdr panes",
+  "license": "Apache-2.0",
+  "repository": { "type": "git", "url": "https://github.com/chalk-ai/chalk-herdr.git" },
   "type": "module",
   "engines": { "node": ">=20" },
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "check": "node --check src/action.mjs && node --check src/bridge.mjs && node --check src/lib.mjs && uv run --script scripts/check-manifest.py",
+    "check": "node --check src/action.mjs && node --check src/bridge.mjs && node --check src/lib.mjs && node --check scripts/e2e.mjs && uv run --script scripts/check-manifest.py",
     "e2e": "node scripts/e2e.mjs"
   }
 }

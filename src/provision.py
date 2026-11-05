@@ -2,7 +2,7 @@
 #
 # /// script
 # requires-python = ">=3.12"
-# dependencies = ["chalkcompute>=2.13"]
+# dependencies = ["chalkcompute==2.13.16"]
 # ///
 """Provision a Chalk sandbox with Claude Code + tmux. Prints one JSON line on stdout."""
 
@@ -24,7 +24,8 @@ def to_duration(value: str) -> str:
 
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("--name", required=True)
+    p.add_argument("--name")
+    p.add_argument("--check", action="store_true", help="Validate SDK imports and image configuration without provisioning")
     p.add_argument("--cpu", default="2")
     p.add_argument("--memory", default="8Gi")
     p.add_argument("--lifetime", default="8h")
@@ -32,6 +33,8 @@ def main() -> None:
     p.add_argument("--claude-version", default=None)
     p.add_argument("--anthropic-secret", default=None, help="Chalk secret holding CLAUDE_CODE_OAUTH_TOKEN")
     args = p.parse_args()
+    if not args.check and not args.name:
+        p.error("--name is required unless --check is used")
 
     image = (
         cc.Image.sandbox()
@@ -42,6 +45,11 @@ def main() -> None:
         .with_tmux()
         .workdir(args.workdir)
     )
+    if args.check:
+        # The SDK imports these lazily: --help and py_compile cannot detect broken dependencies.
+        assert cc.Sandbox and cc.Secret
+        print("SDK and image configuration ok (no sandbox created)")
+        return
     sandbox = cc.Sandbox(
         name=args.name,
         image=image,
@@ -56,7 +64,11 @@ def main() -> None:
             cc.Secret.from_chalk_env(args.anthropic_secret, alias="CLAUDE_CODE_OAUTH_TOKEN"),
         )
     sandbox = sandbox.run()
-    sandbox.exec("mkdir", "-p", args.workdir)
+    try:
+        sandbox.exec("mkdir", "-p", args.workdir)
+    except Exception:
+        sandbox.terminate()
+        raise
     print(json.dumps({"id": sandbox.id, "name": args.name}))
     sys.stdout.flush()
 
