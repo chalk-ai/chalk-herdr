@@ -25,10 +25,17 @@ writeFileSync(path.join(root, "src", "b.py"), "x = 1\n");
 const exec = (id, ...cmd) => runChalk(config, ["sandbox", "exec", "--id", id, "--", ...cmd], { cwd: root });
 let id;
 try {
-  const name = `herdr-e2e-${Date.now().toString(36)}`;
-  const p = spawnSync("uv", ["run", "--quiet", "--script", path.join(here, "../src/provision.py"),
-    "--name", name, "--cpu", config.cpu, "--memory", config.memory, "--lifetime", config.lifetime],
-  { cwd: root, env: chalkEnv(config), encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] });
+  // The Python provisioner has segfaulted (exit 139) intermittently on GitHub runners, shortly
+  // after startup. Retry crashes (signal/139) once; real failures still fail the test.
+  let name, p;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    name = `herdr-e2e-${Date.now().toString(36)}`;
+    p = spawnSync("uv", ["run", "--quiet", "--script", path.join(here, "../src/provision.py"),
+      "--name", name, "--cpu", config.cpu, "--memory", config.memory, "--lifetime", config.lifetime],
+    { cwd: root, env: chalkEnv(config), encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] });
+    if (p.status === 0 || (p.status !== 139 && p.status !== null)) break;
+    console.error(`provisioning crashed (status ${p.status}, signal ${p.signal}); attempt ${attempt}/2`);
+  }
   assert.equal(p.status, 0, "provisioning failed");
   ({ id } = JSON.parse(p.stdout.trim().split("\n").at(-1)));
   console.log(`provisioned ${name} (${id})`);
