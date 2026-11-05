@@ -4,6 +4,12 @@ Run Claude Code in a Chalk sandbox, one sandbox per Herdr pane. Herdr stays the 
 room: the pane is a local terminal attached with `chalk sandbox exec -t` to a `tmux` session
 running `claude` inside the sandbox, so you can detach and reconnect.
 
+## Demo
+
+[![Watch the Chalk Sandbox for Herdr demo](https://cdn.loom.com/sessions/thumbnails/caefc83426274f9b8511bd8a0d950b01-b088b1ebdf520d3d.gif)](https://www.loom.com/share/caefc83426274f9b8511bd8a0d950b01)
+
+[Watch the 56-second demo on Loom](https://www.loom.com/share/caefc83426274f9b8511bd8a0d950b01).
+
 ## Requirements
 
 - Herdr 0.7.5+ (tested on 0.9.5), Node 20+, Git, `tar`
