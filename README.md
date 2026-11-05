@@ -7,13 +7,15 @@ running `claude` inside the sandbox, so you can detach and reconnect.
 ## Requirements
 
 - Herdr 0.7.5+ (tested on 0.9.5), Node 20+, Git, `tar`
-- The `chalk` CLI, logged in (or a `chalk.yml` project directory with credentials)
-- [`uv`](https://docs.astral.sh/uv/) (runs `src/provision.py` with the `chalkcompute` SDK)
+- A Chalk account with sandbox access and the [`chalk` CLI](https://docs.chalk.ai/docs/setup-guide), logged in (or a `chalk.yml` project directory with credentials)
+- [`uv`](https://docs.astral.sh/uv/) (runs `src/provision.py` with the `chalkcompute` SDK and
+  selects Python 3.12–3.14, downloading a compatible interpreter if needed)
 
 ## Install
 
 ```bash
-herdr plugin link /path/to/chalk-herdr   # or: herdr plugin install <owner>/chalk-herdr
+herdr plugin install chalk-ai/chalk-herdr
+# For local development: herdr plugin link /path/to/chalk-herdr
 herdr plugin config-dir chalk.sandbox
 ```
 
@@ -56,7 +58,8 @@ command = "chalk.sandbox.terminate"
 ## Actions
 
 - **start-agent**: splits a pane, builds/starts the sandbox, uploads the Git worktree
-  (tracked + untracked-not-ignored files; never `.git`, `.env*`, keys), attaches Claude Code.
+  (tracked + untracked-not-ignored regular files), and attaches Claude Code.
+  See the upload exclusions below before starting.
   The first image build takes a few minutes; later starts reuse the cached image.
 - **reconnect**: re-attaches to the `agent` tmux session.
 - **info**: prints the mapping and the sandbox's status from Chalk.
@@ -64,29 +67,51 @@ command = "chalk.sandbox.terminate"
 
 Sandboxes outlive the pane. Terminate them, or let `lifetime` expire.
 
-## CI
+## What is uploaded and retained
 
-`.github/workflows/ci.yml` (all actions pinned by commit sha):
+Uploads are a one-time snapshot of the entire Git worktree, including uncommitted changes.
+The plugin excludes `.git`, `.env*`, common credential files (including `.chalk.yml`, `.npmrc`,
+`.netrc`, SSH/cloud credential directories and private-key extensions), symlinks, submodules,
+and deleted files. Git-ignored untracked files are excluded; tracked files remain eligible
+even if later added to `.gitignore`. Filename filtering cannot detect credentials embedded in
+source code. Review the files and use a dedicated worktree when necessary.
 
-- **test**: manifest validation, `node --check`, unit tests, `provision.py` compile, and a check that every
-  `uses:` is sha-pinned.
-- **e2e**: live test against the ftqa Chalk environment (`scripts/e2e.mjs`): provisions a sandbox with Claude Code,
-  uploads a worktree, checks the contents (including that `.env` is not uploaded), starts a tmux session, and
-  always terminates the sandbox. Skipped on fork PRs.
+Local edits after upload and edits inside the sandbox are **not synchronized**. The uploaded
+snapshot has no Git history. Copy any remote changes you want to keep before terminating the
+sandbox or allowing its lifetime to expire. For example, from a local terminal in your Chalk
+credentials directory, save a remote snapshot (replace the sandbox ID):
 
-## Secrets (SOPS)
-
-`secrets/ftqa.enc.env` holds the ftqa service-account creds (`CHALK_CLIENT_ID`, `CHALK_CLIENT_SECRET`,
-`CHALK_ENVIRONMENT`, `CHALK_API_SERVER`), encrypted with SOPS (`.sops.yaml`) to:
-
-- an **age** key: CI decrypts with the `SOPS_AGE_KEY` repo secret (the private key; keep a copy in your password
-  manager and at `~/.config/sops/age/keys.txt` or set `SOPS_AGE_KEY_FILE`);
-- the shared **GCP KMS** key `chalk-infra/cost-monitoring/sops-key`, so `gcp-developers` can decrypt locally.
-
-```bash
-sops exec-env secrets/ftqa.enc.env 'npm run e2e'     # run the live test locally
-sops secrets/ftqa.enc.env                            # edit in place
+```sh
+chalk sandbox exec --id SANDBOX_ID -- tar -c -C /workspace/repo . > sandbox-backup.tar
 ```
 
-To rotate: regenerate the creds, `sops secrets/ftqa.enc.env`, commit. To rotate the age key, generate a new one,
-update `.sops.yaml`, run `sops updatekeys secrets/ftqa.enc.env`, and update the `SOPS_AGE_KEY` repo secret.
+Inspect the archive and extract it into a separate directory before copying changes into your
+worktree. For a custom API server, supply `--api-host` before `--`.
+
+Closing a pane or detaching does not stop the sandbox or its usage charges. Use **Terminate**
+or let `lifetime` expire. Info and Terminate work from the original mapped pane and from a
+reconnected pane; terminating removes every local mapping for that sandbox.
+
+## Development and CI
+
+```sh
+npm run check
+npm test
+uv run --locked --script src/provision.py --check
+```
+
+These checks do not require Chalk credentials. The Python SDK and its dependencies are locked
+from public PyPI; there are no npm dependencies. The live integration test is optional and uses
+a real Chalk sandbox. See [CONTRIBUTING.md](CONTRIBUTING.md) for local development and the
+protected GitHub environment used by that test.
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for data handling and private vulnerability reporting.
+
+## License
+
+Copyright 2026 Chalk AI, Inc. Licensed under [Apache-2.0](LICENSE).
+The plugin requires separately installed Herdr, Chalk tooling, and Claude Code. Those tools
+and the hosted Chalk and Anthropic services retain their own licenses and terms; this license
+covers the plugin source.

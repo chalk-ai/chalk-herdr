@@ -2,8 +2,7 @@
 
 Chalk's "metadata server" is the API server the CLI and SDK talk to: it authenticates you,
 resolves your environment, and creates, lists, and terminates sandboxes. By default that is
-`https://api.chalk.ai`. Staging, isolated deployments, and local `go-api-server` builds have
-their own hosts. This plugin lets you point at any of them.
+`https://api.chalk.ai`. Isolated deployments and local API server builds can have their own hosts. This plugin lets you point at any of them.
 
 ## Setting it
 
@@ -11,7 +10,7 @@ In `$(herdr plugin config-dir chalk.sandbox)/config.json`:
 
 ```json
 {
-  "apiHost": "https://api.staging.chalk.dev",
+  "apiHost": "https://chalk-api.example.com",
   "chalkDir": "/path/to/dir/containing/chalk.yml"
 }
 ```
@@ -31,8 +30,7 @@ In `$(herdr plugin config-dir chalk.sandbox)/config.json`:
 3. `https://api.chalk.ai`
 
 `chalkDir` matters: `chalk` resolves the active environment and token relative to its working
-directory. With the fraud-template-staging project (ftqa), `chalk config --dir <dir>` reports
-`API Server https://api.staging.chalk.dev`, so setting only `chalkDir` is enough there.
+directory. Use `chalk config --dir <dir>` to check the selected API server and environment.
 
 ## Notes
 
@@ -40,6 +38,10 @@ directory. With the fraud-template-staging project (ftqa), `chalk config --dir <
   Terminate reuse the values saved at start, so a pane keeps talking to the server that created it.
 - The sandbox itself runs with Chalk-injected `CHALK_API_SERVER`, so in-sandbox calls reach the
   same server.
-- Credentials are never copied into the sandbox. The Anthropic token is optional and injected
+- Common credential filenames are excluded from uploads; secrets embedded in other files are
+  not detected. The Anthropic token is optional and injected
   by Chalk's credential proxy (`anthropicSecret`), not by the plugin.
-- A wrong or unreachable host fails at provisioning, before any pane mapping is written.
+- Use an API host you trust: the CLI and SDK authenticate to that host. An unreachable host
+  fails at provisioning, before any pane mapping is written.
+- The saved directory is reused, but credentials in that directory can change. Keep it bound
+  to the same Chalk environment while its sandboxes are active.

@@ -3,7 +3,7 @@
 // provision a sandbox with Claude Code, upload a worktree, verify, always terminate.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -30,7 +30,7 @@ try {
   let name, p;
   for (let attempt = 1; attempt <= 2; attempt++) {
     name = `herdr-e2e-${Date.now().toString(36)}`;
-    p = spawnSync("uv", ["run", "--quiet", "--script", path.join(here, "../src/provision.py"),
+    p = spawnSync("uv", ["run", "--quiet", "--locked", "--script", path.join(here, "../src/provision.py"),
       "--name", name, "--cpu", config.cpu, "--memory", config.memory, "--lifetime", config.lifetime],
     { cwd: root, env: chalkEnv(config), encoding: "utf8", stdio: ["ignore", "pipe", "inherit"] });
     if (p.status === 0 || (p.status !== 139 && p.status !== null)) break;
@@ -57,6 +57,11 @@ try {
 } finally {
   if (id) {
     const r = runChalk(config, ["sandbox", "terminate", "--id", id, "--no-spinners"], { cwd: root });
-    console.log(r.status === 0 ? `terminated ${id}` : `TERMINATE FAILED for ${id}: ${r.stderr}`);
+    if (r.status === 0) console.log(`terminated ${id}`);
+    else {
+      console.error(`TERMINATE FAILED for ${id}: ${r.stderr || r.error?.message}`);
+      process.exitCode = 1;
+    }
   }
+  rmSync(root, { recursive: true, force: true });
 }
