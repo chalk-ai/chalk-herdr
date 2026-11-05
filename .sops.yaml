@@ -1,0 +1,7 @@
+# Secrets are encrypted to an age key (used by CI via the SOPS_AGE_KEY GitHub secret)
+# and to the shared chalk-infra KMS key (so gcp-developers can decrypt locally).
+# Either one is sufficient to decrypt.
+creation_rules:
+  - path_regex: ^secrets/.*\.enc\.env$
+    age: age1mjlzp9vk5ap3j2l53h7tht58puw604n4y2l6u57y7dg5r7zkrcustjaz49
+    gcp_kms: projects/chalk-infra/locations/global/keyRings/cost-monitoring/cryptoKeys/sops-key

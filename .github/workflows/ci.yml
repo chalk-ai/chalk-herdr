@@ -1,0 +1,67 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - run: npm run check
+      - run: npm test
+      - name: provision.py compiles
+        run: python3 -m py_compile src/provision.py
+      - name: Actions are pinned by sha
+        run: |
+          if grep -hE '^\s*-?\s*uses:' .github/workflows/*.yml | grep -vE '@[0-9a-f]{40}( |$)'; then
+            echo "unpinned action above" >&2; exit 1
+          fi
+
+  # Live test against the ftqa Chalk environment. Credentials are SOPS-encrypted in
+  # secrets/ftqa.enc.env and decrypted with the SOPS_AGE_KEY repo secret. Skipped for
+  # fork PRs, which cannot read secrets.
+  e2e:
+    needs: test
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      SOPS_VERSION: v3.13.3
+      SOPS_SHA256: e5bec3346a873ae91d871550f3e698c1aad962aff462a080e40f25fde17fef6b
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - name: Install sops (checksum-verified)
+        run: |
+          curl -fsSL -o sops "https://github.com/getsops/sops/releases/download/${SOPS_VERSION}/sops-${SOPS_VERSION}.linux.amd64"
+          echo "${SOPS_SHA256}  sops" | sha256sum -c -
+          sudo install -m 0755 sops /usr/local/bin/sops
+      - name: Install chalk CLI
+        run: |
+          curl -fsSL https://api.chalk.ai/install.sh | sh
+          echo "$HOME/.chalk/bin" >> "$GITHUB_PATH"
+      - name: Live sandbox e2e (ftqa)
+        env:
+          SOPS_AGE_KEY: ${{ secrets.SOPS_AGE_KEY }}
+        run: |
+          command -v chalk || export PATH="$HOME/.local/bin:$HOME/.chalk/bin:$PATH"
+          chalk version
+          sops exec-env secrets/ftqa.enc.env 'node scripts/e2e.mjs'

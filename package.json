@@ -1,0 +1,12 @@
+{
+  "name": "chalk-herdr",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "check": "node --check src/action.mjs && node --check src/bridge.mjs && node --check src/lib.mjs && uv run --script scripts/check-manifest.py",
+    "e2e": "node scripts/e2e.mjs"
+  }
+}

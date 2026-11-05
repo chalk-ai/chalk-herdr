@@ -1,0 +1,34 @@
+id = "chalk.sandbox"
+name = "Chalk Sandbox"
+version = "0.1.0"
+min_herdr_version = "0.7.5"
+description = "Run a coding agent (Claude Code) in a Chalk sandbox, one sandbox per Herdr pane."
+platforms = ["linux", "macos"]
+
+[[actions]]
+id = "start-agent"
+title = "Start Claude Code in a new Chalk sandbox"
+description = "Provision a Chalk sandbox, copy the current Git worktree into it, and attach Claude Code in a new pane."
+contexts = ["workspace", "pane"]
+command = ["node", "src/action.mjs"]
+
+[[actions]]
+id = "reconnect"
+title = "Reconnect to this Chalk sandbox"
+description = "Re-attach to the tmux session of the sandbox mapped to the focused pane."
+contexts = ["pane"]
+command = ["node", "src/action.mjs"]
+
+[[actions]]
+id = "info"
+title = "Show Chalk sandbox mapping"
+description = "Print the sandbox id, name, API server, and status for the focused pane."
+contexts = ["pane"]
+command = ["node", "src/action.mjs"]
+
+[[actions]]
+id = "terminate"
+title = "Terminate this Chalk sandbox"
+description = "Terminate the sandbox mapped to the focused pane and forget the mapping."
+contexts = ["pane"]
+command = ["node", "src/action.mjs"]
