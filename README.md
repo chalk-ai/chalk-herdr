@@ -8,7 +8,8 @@ running `claude` inside the sandbox, so you can detach and reconnect.
 
 - Herdr 0.7.5+ (tested on 0.9.5), Node 20+, Git, `tar`
 - A Chalk account with sandbox access and the [`chalk` CLI](https://docs.chalk.ai/docs/setup-guide), logged in (or a `chalk.yml` project directory with credentials)
-- [`uv`](https://docs.astral.sh/uv/) (runs `src/provision.py` with the `chalkcompute` SDK)
+- [`uv`](https://docs.astral.sh/uv/) (runs `src/provision.py` with the `chalkcompute` SDK and
+  selects Python 3.12–3.14, downloading a compatible interpreter if needed)
 
 ## Install
 

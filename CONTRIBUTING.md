@@ -19,7 +19,9 @@ herdr plugin link "$PWD"
 ```
 
 Unit and regression tests use local fixtures and fake CLIs. They do not need Chalk credentials,
-start agents, or provision remote resources. CI runs on Linux and macOS with Node 20, 22, and 24.
+start agents, or provision remote resources. CI runs on Linux and macOS with Node 20, 22, and 24,
+paired with Python 3.12, 3.13, and 3.14 respectively. The SDK does not yet publish Python 3.15 wheels;
+the script metadata constrains uv to a supported interpreter.
 
 Keep changes focused and add regression tests for behavior changes. By submitting a contribution,
 you agree to license it under this repository's Apache-2.0 license.

@@ -25,6 +25,13 @@ jobs:
       matrix:
         os: [ubuntu-24.04, macos-15]
         node: [20, 22, 24]
+        include:
+          - node: 20
+            python: "3.12"
+          - node: 22
+            python: "3.13"
+          - node: 24
+            python: "3.14"
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     steps:
@@ -35,6 +42,8 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: ${{ matrix.python }}
       - run: npm run check
       - run: npm test
       - name: Public Python dependency and import smoke test

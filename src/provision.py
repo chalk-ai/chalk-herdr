@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run --script
 #
 # /// script
-# requires-python = ">=3.12"
+# requires-python = ">=3.12,<3.15"
 # dependencies = ["chalkcompute==2.13.16"]
 # ///
 """Provision a Chalk sandbox with Claude Code + tmux. Prints one JSON line on stdout."""
